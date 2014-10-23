@@ -4,6 +4,9 @@ import rpm
 import sys
 
 
+def printError(filename, message):
+    sys.stderr.write(sys.argv[0]+": `"+filename+"': "+message+"\n")
+
 def readRpmHeader(ts, filename):
     """ Read an rpm header. """
     fd = os.open(filename, os.O_RDONLY)
@@ -12,12 +15,11 @@ def readRpmHeader(ts, filename):
         h = ts.hdrFromFdno(fd)
     except rpm.error, e:
         if str(e) == "error reading package header":
-            sys.stderr.write(str(e))
+            printError(filename, str(e))
         h = None
     finally:
         os.close(fd)
     return h
-
 
 def main(argv):
     if len(argv) < 2:
@@ -29,9 +31,19 @@ def main(argv):
     fresh_rpms = {}
     for f in argv[1:]:
         if not os.path.exists(f):
-            sys.stderr.write("Error: file %r was not found!" % f)
-            return 1
-        h = readRpmHeader(ts, f)
+            printError(f, "file was not found")
+            continue
+        try:
+            h = readRpmHeader(ts, f)
+        except IOError as e:
+            printError(f, "I/O error ({0}: {1}".format(e.errno, e.strerror))
+            continue
+        except:
+            printError(f, "Unexpected error")
+            continue
+        if h is None:
+            continue
+
         name = h[rpm.RPMTAG_NAME]
         arch = h[rpm.RPMTAG_ARCH]
         if (name,arch not in fresh_rpms
