@@ -33,12 +33,15 @@ def main(argv):
             return 1
         h = readRpmHeader(ts, f)
         name = h[rpm.RPMTAG_NAME]
-        if (name not in fresh_rpms
-                or rpm.versionCompare(h, fresh_rpms[name]['header']) > 0):
-            fresh_rpms[name] = {'header': h, 'filename': f}
+        arch = h[rpm.RPMTAG_ARCH]
+        if (name,arch not in fresh_rpms
+                or rpm.versionCompare(h, fresh_rpms[name,arch]['header']) > 0):
+            fresh_rpms[name,arch] = {'header': h, 'filename': f}
 
     for n, v in fresh_rpms.iteritems():
         print v['filename']
+
+    return 0
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
